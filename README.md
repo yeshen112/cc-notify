@@ -134,15 +134,6 @@ python install-hook.py --uninstall   # 移除 Hook
 
 ## 故障排查
 
-### 输入 `cc` 后托盘没启动
-
-大部分情况是安装时 `cc.bat` 被复制到了 `~/.local/bin/`，但内部路径没有更新。已修复（v1.1+），重新运行 `python setup.py` 即可。
-
-临时手动启动：
-```bash
-pythonw "G:\苏州大学\project\cc提示\cc-notify-tray.py"
-```
-
 ### 测试通知发送失败
 
 1. 确认 Webhook Key 正确（不要有多余空格）
