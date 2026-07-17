@@ -1,0 +1,19 @@
+# IDE
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Project config (user-specific, contains local paths)
+.claude/
+
+# Distribution
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
