@@ -200,18 +200,27 @@ set "PROJECT_DIR={SCRIPT_DIR}"
 set "TRAY_SCRIPT={SCRIPT_DIR / 'cc-notify-tray.py'}"
 set "TRAY_PORT=19284"
 
-:: Check if tray is already running
+:: Check if tray is already running; if not, start it (only once)
 python -c "import socket; s=socket.socket(); s.settimeout(0.5); s.connect(('127.0.0.1',%TRAY_PORT%)); s.close()" >nul 2>&1
 if %errorlevel% neq 0 (
     echo [CC Notify] Starting notification tray...
     start "" pythonw "%TRAY_SCRIPT%"
+    :: Wait for tray to start and bind port
     ping -n 3 127.0.0.1 >nul
 )
+
+:: Register this CC session with the tray (retry up to 3 times)
+for /l %%i in (1,1,3) do (
+    python -c "import socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1',%TRAY_PORT%)); s.sendall(b'HELO'); s.shutdown(1); print(s.recv(64)); s.close()" >nul 2>&1
+    if %errorlevel% equ 0 goto :helo_ok
+    ping -n 2 127.0.0.1 >nul
+)
+:helo_ok
 
 :: Start Claude Code
 claude %*
 
-:: CC exited, signal tray to quit
+:: CC exited, signal tray to unregister this session
 python -c "import socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1',%TRAY_PORT%)); s.sendall(b'EXIT'); s.close()" >nul 2>&1
 '''
     (BIN_DIR / "cc.bat").write_text(cc_bat_content, encoding="utf-8")

@@ -114,6 +114,8 @@ class EventServer(threading.Thread):
         super().__init__(daemon=True)
         self._stop = threading.Event()
         self._icon = None  # 托盘图标引用，收到 EXIT 时用于关闭托盘
+        self._active_sessions = 0  # 活跃 CC 会话计数
+        self._session_lock = threading.Lock()
 
     @staticmethod
     def get_config():
@@ -167,11 +169,37 @@ class EventServer(threading.Thread):
             return
 
         text = buf.decode("utf-8").strip()
+
+        # ── HELO: CC 实例启动时注册会话 ──
+        if text == "HELO":
+            with self._session_lock:
+                self._active_sessions += 1
+            log(f"CC 会话已注册 (活跃: {self._active_sessions})")
+            try:
+                conn.sendall(b"OK")
+            except Exception:
+                pass
+            try:
+                conn.close()
+            except Exception:
+                pass
+            return
+
+        # ── EXIT: CC 实例退出时注销会话 ──
         if text == "EXIT":
-            log("收到退出信号，关闭服务...")
-            self.stop()
-            if self._icon:
-                self._icon.stop()
+            with self._session_lock:
+                self._active_sessions = max(0, self._active_sessions - 1)
+                remaining = self._active_sessions
+            log(f"CC 会话已注销 (剩余活跃: {remaining})")
+            if remaining <= 0:
+                log("所有 CC 会话已结束，关闭服务...")
+                self.stop()
+                if self._icon:
+                    self._icon.stop()
+            try:
+                conn.close()
+            except Exception:
+                pass
             return
 
         try:
@@ -311,8 +339,8 @@ def run_tray():
         log(f"手动测试 → {'✓' if ok else '✗'} {msg}")
 
     def quit_app(icon, item):
-        icon.stop()
         server.stop()
+        icon.stop()
         log("已退出")
 
     menu = pystray.Menu(
