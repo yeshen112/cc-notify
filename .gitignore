@@ -13,6 +13,7 @@ __pycache__/
 
 # Distribution
 *.zip
+ngrok.exe
 
 # OS
 .DS_Store

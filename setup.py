@@ -223,7 +223,8 @@ claude %*
 :: CC exited, signal tray to unregister this session
 python -c "import socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1',%TRAY_PORT%)); s.sendall(b'EXIT'); s.close()" >nul 2>&1
 '''
-    (BIN_DIR / "cc.bat").write_text(cc_bat_content, encoding="utf-8")
+    # CRLF line endings required — cmd.exe can't parse LF-only batch files
+    (BIN_DIR / "cc.bat").write_text(cc_bat_content.replace('\n', '\r\n'), encoding="utf-8")
     ok(f"cc.bat installed to {BIN_DIR}")
 
     # Add to PATH — use Windows registry API (reliable across all users)
